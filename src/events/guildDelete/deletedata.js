@@ -17,22 +17,10 @@ module.exports = async (client, guild) => {
     if (!guildSettings) return;
     const { partner, desc, lastBumpDate } = guildSettings;
     // Remove the guild settings from the database
-    await GuildSettings.deleteMany({
-      guildId,
-      partner,
-      desc,
-      lastBumpDate,
-    }).catch((error) => {
+    await GuildSettings.deleteMany(guildSettings).catch((error) => {
       console.log(error);
     });
     console.log("Deleted Guild DB");
-    const userSettings = await UserSettings.findOne({ guildId });
-    if (!userSettings) return;
-    const { userId, bumps } = userSettings;
-    await UserSettings.deleteMany({ guildId, userId, bumps }).catch((error) => {
-      console.log(error);
-    });
-    console.log("Deleted User DB");
   } catch (error) {
     console.log(`Error Deleting Guild Data automatically: ${error}`);
   }
