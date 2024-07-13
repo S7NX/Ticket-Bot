@@ -1,10 +1,12 @@
 const { PermissionsBitField, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('discord.js');
 const GuildSettings = require('../../models/GuildSettings');
+const GuildTicketSchema = require('../../models/GuildTicket');
 
 module.exports = async (client, interaction) => {
     if (!interaction.isStringSelectMenu()) return;
 
     let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+    let guildTicket = await GuildTicket.findOne({ GuildId: interaction.guild.id });
     if (!guildSettings) return;
 
     // Extract the values from TicketMenuOptions for comparison
@@ -15,17 +17,18 @@ module.exports = async (client, interaction) => {
     }
     const ticketOption = guildSettings.TicketMenuOptions.find(option => option.value === interaction.values[0]);
     interaction.deferReply({ ephemeral: true });
+    createTicket(interaction, guildTicket, guildSettings.TicketSupportRoles, guildSettings.Categories, ticketOption);
 
 };
 
 
-async function createTicket(interaction, existingGuildTicket, ticket_support_roles, categories, ticketOption) {
+async function createTicket(interaction, guildSettings, ticket_support_roles, categories, ticketOption) {
     try {
 
-        let orderId = existingGuildTicket.CurrentTicketChannelNumber++;
-        await existingGuildTicket.save();
+        let orderId = guildSettings.CurrentTicketChannelNumber++;
+        await guildSettings.save();
 
-        let ticketName = `${orderId}-${ticketOption.label}-${interaction.user.username}`.toLowerCase();
+        let ticketName = `${orderId}-${ticketOption}-${interaction.user.username}`.toLowerCase();
         let supportRoles = ticket_support_roles.map(x => ({
             id: x,
             allow: [
@@ -39,8 +42,8 @@ async function createTicket(interaction, existingGuildTicket, ticket_support_rol
 
         await interaction.reply({ content: `Creating ticket...`, ephemeral: true });
 
-        if (interaction.guild.channels.cache.find(c => c.topic == interaction.user.id && c.name.includes("ticket"))) {
-            return interaction.editReply({ content: `You have already created a ticket!`, ephemeral: true });
+        if (interaction.guild.channels.cache.find(c => c.topic == interaction.user.id && c.name.includes(ticketOption))) {
+            return interaction.editReply({ content: `You already have a ticket: <#${c.id}>`, ephemeral: true });
         }
 
         const createdChannel = await interaction.guild.channels.create({
@@ -95,9 +98,9 @@ async function createTicket(interaction, existingGuildTicket, ticket_support_rol
 
         const embed = new EmbedBuilder()
             .setDescription(`# <:T_:1232674301333864540> Ticket: ${ticketOption.label} \n\n ## <:T_:1232674301333864540> <:T_:1232674301333864540> <:T_:1232674301333864540> by: <@!${interaction.user.id}>`)
-            .setColor(existingGuildTicket.EmbedOptions.color)
-            .setImage(existingGuildTicket.EmbedOptions.image || null)
-            .setFooter(existingGuildTicket.EmbedOptions.footer || null);
+            .setColor(guildSettings.EmbedOptions.color)
+            .setImage(guildSettings.EmbedOptions.image || null)
+            .setFooter(guildSettings.EmbedOptions.footer || null);
 
         await createdChannel.send({ content: `${ticket_support_roles.map((m) => `<@&${m}>`).join(", ")}. New Ticket!`, embeds: [embed], components: [row] });
 

@@ -24,6 +24,6 @@ const client = new Client({
     client.cluster = new ClusterClient(client);
     client.login(process.env.TOKEN);
   } catch (error) {
-    console.log(chalk.red(`Error: ${error}`));
+    console.log(chalk.red(`Error:`,  error));
   }
 })();

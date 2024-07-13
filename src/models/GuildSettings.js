@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const guildSettingsSchema = new mongoose.Schema({
   guildId: { type: String, required: true },
-  CurrentTicketChannelNumber: { type: String },
+  CurrentTicketChannelNumber: { type: Number, default: 0o1 },
   TicketMenuOptions: { type: Array, default: [    {
     "label": "Help Ticket",
     "value": "1232395082657693748-ticket-menu-help-ticket",

@@ -4,7 +4,7 @@ const GuildTicketSchema = new mongoose.Schema({
   guildId: { type: String, required: true },
   TicketChannelId: { type: String },
   TicketOwnerID: { type: String },
-  Ticket
+  
 
 
   }

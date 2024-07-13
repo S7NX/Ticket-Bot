@@ -21,12 +21,13 @@ module.exports = {
    * @param {Client} client
    */
   async execute(client, interaction) {
+    try {
     let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
     if (!guildSettings) {
       guildSettings = new GuildSettings({
         guildId: interaction.guild.id,
       });
-      await guildSettings.save();
+      //await guildSettings.save();
     }
 
     if (guildSettings.TicketMenuChannelID) {
@@ -91,7 +92,7 @@ module.exports = {
       .setCustomId('edit-embed')
       .setStyle(ButtonStyle.Secondary);
     let confirmBtn = new ButtonBuilder()
-      .setLabel('Finish Setup')
+      .setLabel('Save & Finish')
       .setCustomId('confrim-button')
       .setStyle(ButtonStyle.Success);
 
@@ -110,22 +111,26 @@ module.exports = {
       switch (i.customId) {
         case `add-option`:
           await add_option(i, embedMsg, customid, Options, guildSettings);
+          collector.resetTimer()
           break;
         case `remove-option`:
           await remove_option(i, embedMsg, customid, Options, guildSettings);
+          collector.resetTimer()
           break;
         case `edit-embed`:
           await edit_embed(i, embedMsg, customid, Options, guildSettings);
+          collector.resetTimer()
           break;
         case `confrim-button`:
-          await confrim_button(i, collector, btnMsg );
+          await confrim_button(i, collector, btnMsg, guildSettings );
           break;
         default:
           break;
       }
       //collector.stop();
     });
-  },
+  }catch(error) { console.error(error) }
+} 
 };
 //functions
 async function add_option(interaction, embedMsg, customid, Options, guildSettings) {
@@ -185,7 +190,7 @@ async function add_option(interaction, embedMsg, customid, Options, guildSetting
       embedMsg.edit({ components: [modalrow] });
       ModalInteraction.reply({ content: 'Option Added.', ephemeral: true });
       guildSettings.TicketMenuOptions = Options;
-      await guildSettings.save();
+      //await guildSettings.save();
     })
     .catch(console.error);
 }
@@ -221,7 +226,7 @@ async function remove_option(interaction, embedMsg, customid, Options, guildSett
       embedMsg.edit({ components: [modalrow] });
       ModalInteraction.reply({ content: 'Option Removed.', ephemeral: true });
       guildSettings.TicketMenuOptions = Options;
-      await guildSettings.save();
+      //await guildSettings.save();
     } else {
       ModalInteraction.reply({ content: 'Please enter a valid number.', ephemeral: true });
     }
@@ -337,7 +342,7 @@ async function edit_embed(interaction, embedMsg, customid, Options, guildSetting
         .getTextInputValue('editBtn-modal-input-color');
         guildSettings.EmbedOptions.Image = newEmbed.image.url;
         guildSettings.EmbedOptions.footer = newEmbed.footer.text;
-        await guildSettings.save();
+        //await guildSettings.save();
       });
   } catch (error) {
     console.error('Error editing embed:', error);
@@ -347,9 +352,10 @@ async function edit_embed(interaction, embedMsg, customid, Options, guildSetting
     });
   }
 }
-async function confrim_button(interaction, collector, btnMsg) {
+async function confrim_button(interaction, collector, btnMsg, guildSettings) {
   if (!interaction) return;
   await btnMsg.delete();
+  await guildSettings.save();
   await interaction.reply({ content: 'Ticket Menu Setup Complete. Use `/ticket send-panel` to send it to a Spefic Channel or Directly use it from here.', ephemeral: true });
   await collector.stop();
 }
