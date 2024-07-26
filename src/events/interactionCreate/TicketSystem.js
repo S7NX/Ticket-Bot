@@ -116,15 +116,23 @@ module.exports = async (client, interaction) => {
 
 				const embed = new EmbedBuilder().setDescription(`## ${interaction.guild.name} \n### Your Ticket has been Deleted.\n> ### ***Ticket ID: ${orderId} :arrow_right: 🗑️ Deleted*** \n### Ticket System.`);
 
-				const transcript = await discordTranscripts.createTranscript(channel);
+				const StringTranscript = await discordTranscripts.createTranscript(channel, {
+					poweredBy: false,
+					saveImages: true,
+					returnType: 'string',
+				});
+				const uniqueCode = `${Date.now().toString(36)+Math.random().toString(36).substring(2, 10)}`
+				let url = await saveHtml( 'https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript)
+				const transcriptButton = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Transcript').setURL(url);
+				
 				await channel.delete();
 
 				if (ticketInfo.TicketStatus !== 'Closed') {
-					await member.send({ embeds: [embed], files: [transcript] });
+					await member.send({ embeds: [embed], components: [ new ActionRowBuilder().addComponents(transcriptButton)] });
 				}
 
 				const logEmbed = new EmbedBuilder().setDescription(`## Ticket Deleted \n> ### ***Ticket ID: ${orderId} :arrow_right: 🗑️ Deleted*** \n### Ticket System.`);
-				await logChannel.send({ embeds: [logEmbed], files: [transcript] });
+				await logChannel.send({ embeds: [logEmbed], components: [ new ActionRowBuilder().addComponents(transcriptButton)] });
 
 				await ticketInfo.deleteOne();
 			} else if (interaction.customId === 'ticket-claim') {
