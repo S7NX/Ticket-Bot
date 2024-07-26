@@ -2,7 +2,7 @@ const { SlashCommandBuilder, ChatInputCommandInteraction, Client, ActionRowBuild
 const GuildSettings = require('../../models/GuildSettings');
 const GuildTicket = require('../../models/GuildTicket');
 
-module.exports = {
+(module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ticket')
 		.setDescription('Various commands for Ticket System.')
@@ -13,167 +13,232 @@ module.exports = {
 				.setName('panel')
 				.setDescription('Sends Ticket Panel to a speific channel.')
 				.addChannelOption((option) => option.setName('channel').setDescription('Select a channel to send the ticket menu.').setRequired(true))
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('add')
+				.setDescription('Adds a user to a ticket.')
+				.addUserOption((option) => option.setName('user').setDescription('The user to add to the ticket.').setRequired(true))
+		)
+		.addSubcommand((subcommand) =>
+			subcommand
+				.setName('remove')
+				.setDescription('Removes a user from the ticket.')
+				.addUserOption((option) => option.setName('user').setDescription('The user to remove from the ticket.').setRequired(true))
 		),
 	async execute(client, interaction) {
 		const subcommand = interaction.options.getSubcommand();
 		if (subcommand === 'setup') {
-            try {
-                await interaction.deferReply({ ephemeral: true });
-                let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
-                if (!guildSettings) {
-                    guildSettings = new GuildSettings({
-                        guildId: interaction.guild.id,
-                    });
-                    //await guildSettings.save();
-                }
-    
-                let customid = `${interaction.guild.id}-ticket-menu`;
-                let Options;
-    
-                if (Array.isArray(guildSettings.TicketMenuOptions) && guildSettings.TicketMenuOptions.length > 0) {
-                    Options = guildSettings.TicketMenuOptions;
-                } else {
-                    Options = [
-                        {
-                            label: 'Help Ticket',
-                            value: `${customid}-help-ticket`,
-                            description: 'Open a Ticket',
-                            emoji: '🎫',
-                        },
-                        {
-                            label: 'Report Ticket',
-                            value: `${customid}-report-ticket`,
-                            description: 'Open a Ticket',
-                            emoji: '🎫',
-                        },
-                    ];
-                }
-    
-                const selectMenu = new StringSelectMenuBuilder().setCustomId(customid).setPlaceholder('🔒 Nothing Selected Yet.').addOptions(Options);
-                let row = new ActionRowBuilder().addComponents(selectMenu);
-    
-                let embed = new EmbedBuilder().setDescription('Select an option to open a ticket. 👇').setFooter({ text: `Made with 💗 by S7NX` });
-                if (guildSettings.EmbedOptions) {
-                    if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
-                    if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
-                    if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
-                    if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
-                }
-                let addBtn = new ButtonBuilder().setLabel('Add Option').setCustomId('add-option').setStyle(ButtonStyle.Primary);
-    
-                let removeBtn = new ButtonBuilder().setLabel('Remove Option').setCustomId('remove-option').setStyle(ButtonStyle.Danger);
-    
-                let editBtn = new ButtonBuilder().setLabel('Edit Embed').setCustomId('edit-embed').setStyle(ButtonStyle.Secondary);
-                let confirmBtn = new ButtonBuilder().setLabel('Save & Continue').setCustomId('confrim-button').setStyle(ButtonStyle.Success);
-    
-                // Send the embed with the select menu
-                let embedMsg = await interaction.channel.send({ embeds: [embed], components: [row] });
-    
-                // Create a new row with buttons
-                let buttonRow = new ActionRowBuilder().addComponents(addBtn, removeBtn, editBtn, confirmBtn);
-    
-                // Reply to the interaction with the buttons
-                let btnMsg = await interaction.editReply({ components: [buttonRow], ephemeral: true });
-                let filter = (i) => i.isButton() && i.user.id === interaction.user.id;
-                let collector = btnMsg.createMessageComponentCollector({ filter, idle: 60000 });
-    
-                collector.on('collect', async (i) => {
-                    switch (i.customId) {
-                        case `add-option`:
-                            await add_option(i, embedMsg, customid, Options, guildSettings);
-                            collector.resetTimer();
-                            break;
-                        case `remove-option`:
-                            await remove_option(i, embedMsg, customid, Options, guildSettings);
-                            collector.resetTimer();
-                            break;
-                        case `edit-embed`:
-                            await edit_embed(i, embedMsg, customid, Options, guildSettings);
-                            collector.resetTimer();
-                            break;
-                        case `confrim-button`:
-                            await confrim_button(i, collector, embedMsg, guildSettings);
-                            break;
-                        default:
-                            break;
-                    }
-                    //collector.stop();
-                });
-            } catch (error) {
-                console.error(error);
-            }
-		} else if (subcommand === 'panel') {
-            try{
-                interaction.deferReply({ ephemeral: true });
-                const channel = interaction.options.getChannel('channel');
-                let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
-                if (!guildSettings) {
-                    guildSettings = new GuildSettings({
-                        guildId: interaction.guild.id,
-                    });
-                }
-                let Options = guildSettings.TicketMenuOptions
-                const selectMenu = new StringSelectMenuBuilder().setCustomId(`${interaction.guild.id}-ticket-menu`).setPlaceholder('🔒 Nothing Selected Yet.').addOptions(Options);
-                let row = new ActionRowBuilder().addComponents(selectMenu);
-    
-                let embed = new EmbedBuilder().setDescription('Select an option to open a ticket. 👇').setFooter({ text: `Made with 💗 by S7NX` });
-                if (guildSettings.EmbedOptions) {
-                    if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
-                    if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
-                    if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
-                    if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
-                }
-                let panelMsg = await channel.send({ embeds: [embed], components: [row] });
-                guildSettings.PanelChannelID = channel.id;
-                guildSettings.PanelMessageID = panelMsg.id;
-                guildSettings.save();
-                await interaction.editReply({ content: `Ticket Menu has been sent to <#${channel.id}>.`, ephemeral: true });
-                
-            }catch(e){console.log(e)}
-        }
-	},
-};
-async function add_option(interaction, embedMsg, customid, Options, guildSettings) {
-	if (!interaction) return;
-	let modal = new ModalBuilder().setCustomId(`addBtn-modal`).setTitle('Add Option');
-	let optionName = new TextInputBuilder().setCustomId(`addBtn-modal-input-name`).setLabel('Option Name').setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(100).setRequired(true);
-	let optionDescription = new TextInputBuilder().setCustomId(`addBtn-modal-input-description`).setMinLength(1).setMaxLength(100).setLabel('Option Description').setStyle(TextInputStyle.Paragraph).setRequired(false);
-	let optionEmoji = new TextInputBuilder().setCustomId(`addBtn-modal-input-emoji`).setLabel('Option Emoji').setStyle(TextInputStyle.Short).setRequired(false);
-	const modalrow1 = new ActionRowBuilder().addComponents(optionName);
-	const modalrow2 = new ActionRowBuilder().addComponents(optionDescription);
-	const modalrow3 = new ActionRowBuilder().addComponents(optionEmoji);
-	modal.addComponents(modalrow1, modalrow2, modalrow3);
-	await interaction.showModal(modal);
-	let Modalfilter = (ModalInteraction) => ModalInteraction.customId === 'addBtn-modal';
-	interaction
-		.awaitModalSubmit({ Modalfilter, time: 60_000 })
-		.then(async (ModalInteraction) => {
-			let optionName = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-name');
-			let optionDescription = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-description');
-			let optionEmoji = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-emoji');
+			try {
+				await interaction.deferReply({ ephemeral: true });
+				let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+				if (!guildSettings) {
+					guildSettings = new GuildSettings({
+						guildId: interaction.guild.id,
+					});
+					//await guildSettings.save();
+				}
 
-			if (Options.some((option) => option.label.toLowerCase() === optionName.toLowerCase())) {
-				return ModalInteraction.reply({
-					content: 'Option name already exists. Please choose a different name.',
-					ephemeral: true,
+				let customid = `${interaction.guild.id}-ticket-menu`;
+				let Options;
+
+				if (Array.isArray(guildSettings.TicketMenuOptions) && guildSettings.TicketMenuOptions.length > 0) {
+					Options = guildSettings.TicketMenuOptions;
+				} else {
+					Options = [
+						{
+							label: 'Help Ticket',
+							value: `${customid}-help-ticket`,
+							description: 'Open a Ticket',
+							emoji: '🎫',
+						},
+						{
+							label: 'Report Ticket',
+							value: `${customid}-report-ticket`,
+							description: 'Open a Ticket',
+							emoji: '🎫',
+						},
+					];
+				}
+
+				const selectMenu = new StringSelectMenuBuilder().setCustomId(customid).setPlaceholder('🔒 Nothing Selected Yet.').addOptions(Options);
+				let row = new ActionRowBuilder().addComponents(selectMenu);
+
+				let embed = new EmbedBuilder().setDescription('Select an option to open a ticket. 👇').setFooter({ text: `Made with 💗 by S7NX` });
+				if (guildSettings.EmbedOptions) {
+					if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
+					if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
+					if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
+					if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
+				}
+				let addBtn = new ButtonBuilder().setLabel('Add Option').setCustomId('add-option').setStyle(ButtonStyle.Primary);
+
+				let removeBtn = new ButtonBuilder().setLabel('Remove Option').setCustomId('remove-option').setStyle(ButtonStyle.Danger);
+
+				let editBtn = new ButtonBuilder().setLabel('Edit Embed').setCustomId('edit-embed').setStyle(ButtonStyle.Secondary);
+				let confirmBtn = new ButtonBuilder().setLabel('Save & Continue').setCustomId('confrim-button').setStyle(ButtonStyle.Success);
+
+				// Send the embed with the select menu
+				let embedMsg = await interaction.channel.send({ embeds: [embed], components: [row] });
+
+				// Create a new row with buttons
+				let buttonRow = new ActionRowBuilder().addComponents(addBtn, removeBtn, editBtn, confirmBtn);
+
+				// Reply to the interaction with the buttons
+				let btnMsg = await interaction.editReply({ components: [buttonRow], ephemeral: true });
+				let filter = (i) => i.isButton() && i.user.id === interaction.user.id;
+				let collector = btnMsg.createMessageComponentCollector({ filter, idle: 60000 });
+
+				collector.on('collect', async (i) => {
+					switch (i.customId) {
+						case `add-option`:
+							await add_option(i, embedMsg, customid, Options, guildSettings);
+							collector.resetTimer();
+							break;
+						case `remove-option`:
+							await remove_option(i, embedMsg, customid, Options, guildSettings);
+							collector.resetTimer();
+							break;
+						case `edit-embed`:
+							await edit_embed(i, embedMsg, customid, Options, guildSettings);
+							collector.resetTimer();
+							break;
+						case `confrim-button`:
+							await confrim_button(i, collector, embedMsg, guildSettings);
+							break;
+						default:
+							break;
+					}
+					//collector.stop();
 				});
+			} catch (error) {
+				console.error(error);
 			}
+		} else if (subcommand === 'panel') {
+			try {
+				interaction.deferReply({ ephemeral: true });
+				const channel = interaction.options.getChannel('channel');
+				let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+				if (!guildSettings) {
+					guildSettings = new GuildSettings({
+						guildId: interaction.guild.id,
+					});
+				}
+				let Options = guildSettings.TicketMenuOptions;
+				const selectMenu = new StringSelectMenuBuilder().setCustomId(`${interaction.guild.id}-ticket-menu`).setPlaceholder('🔒 Nothing Selected Yet.').addOptions(Options);
+				let row = new ActionRowBuilder().addComponents(selectMenu);
 
-			let Option = {
-				value: `${customid}-${optionName.toLowerCase().replace(' ', '-')}`,
-			};
-			Option.label = optionName;
-			if (optionDescription) Option.description = optionDescription;
-			if (optionEmoji) Option.emoji = optionEmoji;
-			Options.push(Option);
-			let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
-			embedMsg.edit({ components: [modalrow] });
-			ModalInteraction.reply({ content: 'Option Added.', ephemeral: true });
-			guildSettings.TicketMenuOptions = Options;
-			//await guildSettings.save();
-		})
-		.catch(console.error);
-}
+				let embed = new EmbedBuilder().setDescription('Select an option to open a ticket. 👇').setFooter({ text: `Made with 💗 by S7NX` });
+				if (guildSettings.EmbedOptions) {
+					if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
+					if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
+					if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
+					if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
+				}
+				let panelMsg = await channel.send({ embeds: [embed], components: [row] });
+				guildSettings.PanelChannelID = channel.id;
+				guildSettings.PanelMessageID = panelMsg.id;
+				guildSettings.save();
+				await interaction.editReply({ content: `Ticket Menu has been sent to <#${channel.id}>.`, ephemeral: true });
+			} catch (e) {
+				console.log(e);
+			}
+		} else if (subcommand === 'add') {
+			try {
+				interaction.deferReply({ ephemeral: true });
+				let user = interaction.options.getUser('user');
+				let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+				if (!guildSettings) {
+					guildSettings = new GuildSettings({
+						guildId: interaction.guild.id,
+					});
+					await guildSettings.save();
+				}
+				let ticket = await GuildTicket.findOne({ TicketChannelId: interaction.channel.id });
+				if (!ticket) {
+					return await interaction.editReply({ content: 'This is not a ticket channel.', ephemeral: true });
+				}
+				let ticketChannel = interaction.guild.channels.cache.get(ticket.TicketChannelId);
+				await ticketChannel.permissionOverwrites.edit(user, {
+					[PermissionsBitField.Flags.ViewChannel]: true,
+					[PermissionsBitField.Flags.SendMessages]: true,
+					[PermissionsBitField.Flags.AttachFiles]: true,
+					[PermissionsBitField.Flags.EmbedLinks]: true,
+				});
+				await interaction.editReply({ content: `${user} has been added to the ticket.`, ephemeral: true });
+			} catch (error) {
+				console.error(error);
+			}
+		} else if (subcommand === 'remove') {
+			try {
+				interaction.deferReply({ ephemeral: true });
+				let user = interaction.options.getUser('user');
+				let guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+				if (!guildSettings) {
+					guildSettings = new GuildSettings({
+						guildId: interaction.guild.id,
+					});
+					await guildSettings.save();
+				}
+				let ticket = await GuildTicket.findOne({ TicketChannelId: interaction.channel.id });
+				if (!ticket) {
+					return await interaction.editReply({ content: 'This is not a ticket channel.', ephemeral: true });
+				}
+				let ticketChannel = interaction.guild.channels.cache.get(ticket.TicketChannelId);
+				await ticketChannel.permissionOverwrites.edit(user, {
+					[PermissionsBitField.Flags.ViewChannel]: false,
+					[PermissionsBitField.Flags.SendMessages]: false,
+					[PermissionsBitField.Flags.AttachFiles]: false,
+					[PermissionsBitField.Flags.EmbedLinks]: false,
+				});
+				await interaction.editReply({ content: `${user} has been removed from the ticket.`, ephemeral: true });
+			} catch (error) {
+				console.error(error);
+			}
+		}
+	},
+}),
+	async function add_option(interaction, embedMsg, customid, Options, guildSettings) {
+		if (!interaction) return;
+		let modal = new ModalBuilder().setCustomId(`addBtn-modal`).setTitle('Add Option');
+		let optionName = new TextInputBuilder().setCustomId(`addBtn-modal-input-name`).setLabel('Option Name').setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(100).setRequired(true);
+		let optionDescription = new TextInputBuilder().setCustomId(`addBtn-modal-input-description`).setMinLength(1).setMaxLength(100).setLabel('Option Description').setStyle(TextInputStyle.Paragraph).setRequired(false);
+		let optionEmoji = new TextInputBuilder().setCustomId(`addBtn-modal-input-emoji`).setLabel('Option Emoji').setStyle(TextInputStyle.Short).setRequired(false);
+		const modalrow1 = new ActionRowBuilder().addComponents(optionName);
+		const modalrow2 = new ActionRowBuilder().addComponents(optionDescription);
+		const modalrow3 = new ActionRowBuilder().addComponents(optionEmoji);
+		modal.addComponents(modalrow1, modalrow2, modalrow3);
+		await interaction.showModal(modal);
+		let Modalfilter = (ModalInteraction) => ModalInteraction.customId === 'addBtn-modal';
+		interaction
+			.awaitModalSubmit({ Modalfilter, time: 60_000 })
+			.then(async (ModalInteraction) => {
+				let optionName = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-name');
+				let optionDescription = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-description');
+				let optionEmoji = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-emoji');
+
+				if (Options.some((option) => option.label.toLowerCase() === optionName.toLowerCase())) {
+					return ModalInteraction.reply({
+						content: 'Option name already exists. Please choose a different name.',
+						ephemeral: true,
+					});
+				}
+
+				let Option = {
+					value: `${customid}-${optionName.toLowerCase().replace(' ', '-')}`,
+				};
+				Option.label = optionName;
+				if (optionDescription) Option.description = optionDescription;
+				if (optionEmoji) Option.emoji = optionEmoji;
+				Options.push(Option);
+				let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
+				embedMsg.edit({ components: [modalrow] });
+				ModalInteraction.reply({ content: 'Option Added.', ephemeral: true });
+				guildSettings.TicketMenuOptions = Options;
+				//await guildSettings.save();
+			})
+			.catch(console.error);
+	};
 
 async function remove_option(interaction, embedMsg, customid, Options, guildSettings) {
 	if (!interaction) return;
@@ -366,16 +431,15 @@ async function CategorySelection(collector, guildSettings) {
 				for (let ticket of guildSettings.TicketMenuOptions) {
 					let categoryName = `${ticket.label}`;
 					let existingCategory = interaction.guild.channels.cache.find((channel) => channel.type === ChannelType.GuildCategory && channel.name === categoryName);
-					let index = guildSettings.TicketMenuOptions.findIndex((x) => x.value === ticket.value);//find ticket index in guildsetting
+					let index = guildSettings.TicketMenuOptions.findIndex((x) => x.value === ticket.value); //find ticket index in guildsetting
 					if (existingCategory) {
 						if (existingCategory.id === ticket.Category) {
 							continue; // Ticket category is already correct, continue to the next ticket
 						} else {
 							ticket.Category = existingCategory.id; // Update ticket category to existing category id
-							guildSettings.TicketMenuOptions[index] = ticket
+							guildSettings.TicketMenuOptions[index] = ticket;
 						}
 					} else {
-						
 						// Create a new category since it doesn't exist
 
 						let newCategory = await interaction.guild.channels.create({
