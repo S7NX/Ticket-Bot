@@ -17,11 +17,6 @@ module.exports = async (client, guild) => {
 		// Remove the guild settings from the database
 		await guildSettings.deleteOne();
 
-		const ticketInfo = await TicketInfo.findOne({ guildId });
-		if (!ticketInfo) return;
-		// Remove the ticket info from the database
-		await ticketInfo.deleteOne();
-
 	} catch (error) {
 		console.log(`Error Deleting Guild Data automatically: ${error}`);
 	}
