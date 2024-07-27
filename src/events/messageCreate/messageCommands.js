@@ -12,7 +12,17 @@ module.exports = async (client, message) => {
 
         try {
             if (cmdName === 'help') {
-                await message.reply('Help command');
+                let helpEmbed = new EmbedBuilder()
+                    .setColor('#8f82ff')
+                    .setTitle('Help')
+                    .setDescription('Here are the available commands:')
+                    .addFields(
+                        { name: 'add', value: 'Add a user to the ticket', inline: false },
+                        { name: 'remove', value: 'Remove a user from the ticket', inline: false },
+                        { name: 'ping', value: 'Check the bot\'s latency', inline: false },
+                        { name: 'eval', value: 'Evaluate JavaScript code', inline: false },
+                    );
+                await message.reply({ embeds: [helpEmbed] });
             } else if (cmdName === 'add') {
                 let ticketInfo = await GuildTicket.findOne({ TicketChannelId: message.channel.id });
                 if (!ticketInfo) return;
