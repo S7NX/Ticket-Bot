@@ -1,4 +1,5 @@
 {
   "devs": ["760227928843223060"],
+  "prefix": ".",
   "autoDeleteSlash": false
 }

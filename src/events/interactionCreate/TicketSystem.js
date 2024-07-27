@@ -2,7 +2,7 @@ const { PermissionsBitField, ChannelType, ActionRowBuilder, ButtonBuilder, Butto
 const GuildSettings = require('../../models/GuildSettings');
 const GuildTicketSchema = require('../../models/GuildTicket');
 const discordTranscripts = require('discord-html-transcripts');
-const fetch = require('node-fetch-commonjs');
+const axios = require('axios');
 
 module.exports = async (client, interaction) => {
 	try {
@@ -22,78 +22,95 @@ module.exports = async (client, interaction) => {
 			createTicket(interaction, guildSettings, guildSettings.StaffRoleIDs, ticketOption);
 		} else if (interaction.isButton()) {
 			if (interaction.customId === 'ticket-close') {
+				await interaction.deferReply();
 				const confirm = new ButtonBuilder().setCustomId('close_confirm').setLabel('Confirm').setStyle(ButtonStyle.Danger);
 				const cancel = new ButtonBuilder().setCustomId('close_cancel').setLabel('Cancel').setStyle(ButtonStyle.Secondary);
 
 				const row = new ActionRowBuilder().addComponents(confirm, cancel);
 
-				let reply = interaction.reply({ content: 'Are you sure you want to close this ticket?', components: [row] });
+				let reply = interaction.editReply({ content: 'Are you sure you want to close this ticket?', components: [row] });
 			} else if (interaction.customId === 'close_confirm') {
-				const channel = interaction.channel;
-				const parentId = channel.parent.id || null;
-
-				const [guildSettings, ticketInfo] = await Promise.all([GuildSettings.findOne({ guildId: interaction.guild.id }), GuildTicketSchema.findOne({ TicketChannelId: channel.id })]);
-
-				await interaction.message.delete();
-				const member = interaction.guild.members.cache.get(ticketInfo.ticketUserID);
-				const logChannel = interaction.guild.channels.cache.get(guildSettings.TicketLogChannelID);
-				const embedMessage = await channel.messages.fetch(ticketInfo.TicketEmbedMsgId);
-
-				const [closeButton, deleteButton, claimButton] = embedMessage.components[0].components;
-				const disabledCloseButton = ButtonBuilder.from(closeButton).setDisabled(true);
-
-				await embedMessage.edit({
-					components: [new ActionRowBuilder().addComponents(disabledCloseButton, deleteButton, claimButton)],
-				});
-
-				await channel.permissionOverwrites.edit(member, {
-					[PermissionsBitField.Flags.ViewChannel]: false,
-				});
-
-				const orderId = ticketInfo.ticketID;
-				await channel.edit({
-					name: `${orderId}-closed-${member.user.username}`,
-					parent: guildSettings.ClosedTicketCategory || parentId,
-				});
-
-
-				
-				const StringTranscript = await discordTranscripts.createTranscript(channel, {
-					poweredBy: false,
-					saveImages: true,
-					returnType: 'string',
-				});
-				const uniqueCode = `${Date.now().toString(36)+Math.random().toString(36).substring(2, 10)}`
-				let url = await saveHtml( 'https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript)
-				const transcriptButton = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Transcript').setURL(url);
-				
-				const ticketClosedEmbed = new EmbedBuilder().setDescription(`## Ticket Closed \n> ### ***Ticket ID: ${orderId} :arrow_right: 🔒 Closed*** \n### Ticket System.`);
-
-				const reopenButton = new ButtonBuilder().setLabel('Reopen Ticket!').setStyle(ButtonStyle.Secondary).setCustomId('reopen_ticket');
-
-				const actionRow = new ActionRowBuilder().addComponents( transcriptButton, reopenButton);
-
-				await interaction.channel.send({
-					content: '## Ticket Closed.',
-					embeds: [ticketClosedEmbed],
-					components: [ new ActionRowBuilder().addComponents(transcriptButton)],
-				});
-
-				const logMessage = await logChannel.send({
-					embeds: [ticketClosedEmbed],
-					components: [actionRow],
-				});
-
-				const memberEmbed = new EmbedBuilder().setDescription(`## ${interaction.guild.name} \n### Your Ticket has been Closed.\n> ### ***Ticket ID: ${orderId} :arrow_right: 🔒 Closed*** \n### Ticket System.`);
-
-				await member.send({
-					embeds: [memberEmbed],
-					components: [ new ActionRowBuilder().addComponents(transcriptButton)],
-				});
-
-				ticketInfo.logMessageId = logMessage.id;
-				ticketInfo.TicketStatus = 'Closed';
-				await ticketInfo.save();
+				try {
+					const channel = interaction.channel;
+			
+					let parentId;
+					if (channel.parent) parentId = channel.parent.id;
+			
+					const [guildSettings, ticketInfo] = await Promise.all([
+						GuildSettings.findOne({ guildId: interaction.guild.id }),
+						GuildTicketSchema.findOne({ TicketChannelId: channel.id })
+					]);
+			
+					await interaction.message.delete();
+			
+					let member = await interaction.guild.members.fetch(ticketInfo.ticketUserID);
+			
+					const logChannel = await interaction.guild.channels.fetch(guildSettings.TicketLogChannelID);
+			
+					const embedMessage = await channel.messages.fetch(ticketInfo.TicketEmbedMsgId);
+			
+					member = member.user;
+					const [closeButton, deleteButton, claimButton] = embedMessage.components[0].components;
+					const disabledCloseButton = ButtonBuilder.from(closeButton).setDisabled(true);
+			
+					await embedMessage.edit({
+						components: [new ActionRowBuilder().addComponents(disabledCloseButton, deleteButton, claimButton)],
+					});
+			
+					await channel.permissionOverwrites.edit(member, {
+						[PermissionsBitField.Flags.ViewChannel]: false,
+					});
+			
+					const orderId = ticketInfo.ticketID;
+					await channel.edit({
+						name: `${orderId}-closed-${member.username}`,
+						parent: guildSettings.ClosedTicketCategory || parentId,
+					});
+			
+					const StringTranscript = await discordTranscripts.createTranscript(channel, {
+						poweredBy: false,
+						saveImages: true,
+						returnType: 'string',
+					});
+			
+					const uniqueCode = `${Date.now().toString(36) + Math.random().toString(36).substring(2, 10)}`;
+					saveHtml('https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript);
+					let url = `https://s7nx.is-a-awesome.dev/transcript/${uniqueCode}`;
+					const transcriptButton = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Transcript').setURL(url);
+			
+					const ticketClosedEmbed = new EmbedBuilder().setDescription(`## Ticket Closed \n> ### ***Ticket ID: ${orderId} :arrow_right: 🔒 Closed*** \n### Ticket System.`);
+			
+					const reopenButton = new ButtonBuilder().setLabel('Reopen Ticket!').setStyle(ButtonStyle.Secondary).setCustomId('reopen_ticket');
+			
+					const actionRow = new ActionRowBuilder().addComponents(transcriptButton, reopenButton);
+			
+					await interaction.channel.send({
+						content: '## Ticket Closed.',
+						embeds: [ticketClosedEmbed],
+						components: [new ActionRowBuilder().addComponents(transcriptButton)],
+					});
+			
+					if (logChannel) {
+						const logMessage = await logChannel.send({
+							embeds: [ticketClosedEmbed],
+							components: [actionRow],
+						});
+						ticketInfo.logMessageId = logMessage.id;
+					}
+			
+					const memberEmbed = new EmbedBuilder().setDescription(`## ${interaction.guild.name} \n### Your Ticket has been Closed.\n> ### ***Ticket ID: ${orderId} :arrow_right: 🔒 Closed*** \n### Ticket System.`);
+			
+					await member.send({
+						embeds: [memberEmbed],
+						components: [new ActionRowBuilder().addComponents(transcriptButton)],
+					});
+			
+					ticketInfo.TicketStatus = 'Closed';
+					await ticketInfo.save();
+			
+				} catch (e) {
+					console.error('Error in close_confirm:', e);
+				}
 			} else if (interaction.customId === 'close_cancel' || interaction.customId === 'delete_cancel') {
 				await interaction.message.delete();
 			} else if (interaction.customId === 'ticket-delete') {
@@ -121,19 +138,23 @@ module.exports = async (client, interaction) => {
 					saveImages: true,
 					returnType: 'string',
 				});
-				const uniqueCode = `${Date.now().toString(36)+Math.random().toString(36).substring(2, 10)}`
-				let url = await saveHtml( 'https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript)
+				const uniqueCode = `${Date.now().toString(36) + Math.random().toString(36).substring(2, 10)}`;
+				let url = await saveHtml('https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript);
 				const transcriptButton = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Transcript').setURL(url);
-				
+
 				await channel.delete();
 
 				if (ticketInfo.TicketStatus !== 'Closed') {
-					await member.send({ embeds: [embed], components: [ new ActionRowBuilder().addComponents(transcriptButton)] });
+					await member.send({ embeds: [embed], components: [new ActionRowBuilder().addComponents(transcriptButton)] });
 				}
-
-				const logEmbed = new EmbedBuilder().setDescription(`## Ticket Deleted \n> ### ***Ticket ID: ${orderId} :arrow_right: 🗑️ Deleted*** \n### Ticket System.`);
-				await logChannel.send({ embeds: [logEmbed], components: [ new ActionRowBuilder().addComponents(transcriptButton)] });
-
+				if (logChannel) {
+					const logEmbed = new EmbedBuilder().setDescription(`## Ticket Deleted \n> ### ***Ticket ID: ${orderId} :arrow_right: 🗑️ Deleted*** \n### Ticket System.`);
+					await logChannel.send({ embeds: [logEmbed], components: [new ActionRowBuilder().addComponents(transcriptButton)] });
+				}
+				if (ticketInfo.logMessageId) {
+					const logMessage = await logChannel.messages.fetch(ticketInfo.logMessageId);
+					await logMessage.delete();
+				}
 				await ticketInfo.deleteOne();
 			} else if (interaction.customId === 'ticket-claim') {
 				const guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
@@ -210,9 +231,87 @@ module.exports = async (client, interaction) => {
 					embeds: [new EmbedBuilder().setDescription(`Ticket unclaimed by <@!${interaction.user.id}>`)],
 				});
 			} else if (interaction.customId === 'reopen_ticket') {
-				const guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
-				const ticketInfo = await GuildTicketSchema.findOne({ TicketChannelId: interaction.channel.id });
-				
+				try {
+					const guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+					const ticketInfo = await GuildTicketSchema.findOne({ logMessageId: interaction.message.id });
+					await interaction.reply({ content: 'Reopening ticket...', ephemeral: true });
+					if (!ticketInfo || interaction.message.id !== ticketInfo.logMessageId) {
+						return interaction.editReply({ content: 'You cannot reopen this ticket.', ephemeral: true });
+					}
+			
+					if (ticketInfo.TicketStatus !== 'Closed') {
+						return interaction.editReply({ content: "This ticket isn't closed.", ephemeral: true });
+					}
+			
+					const closedTicketChannel = await interaction.guild.channels.fetch(ticketInfo.TicketChannelId);
+					if (!closedTicketChannel) {
+						return interaction.editReply({ content: 'Ticket channel not found.', ephemeral: true });
+					}
+			
+					const TicketOwner = await interaction.guild.members.fetch(ticketInfo.ticketUserID);
+					if (!TicketOwner) {
+						return interaction.editReply({ content: 'Ticket Owner not found.', ephemeral: true });
+					}
+					
+					await interaction.editReply({ content: `Ticket Reopened: ${closedTicketChannel} ` });
+					setTimeout(async () => { await interaction.deleteReply()}, 2500)
+			
+					const channelName = `${ticketInfo.ticketID}-${ticketInfo.ticketMenuOption[0].label}-${TicketOwner.user.username}`.toLowerCase();
+					await closedTicketChannel.edit({
+						name: channelName,
+						parent: guildSettings.TicketCategory || ticketInfo.ticketMenuOption[0].Category,
+					});
+			
+					const staffRoleIDs = guildSettings.StaffRoleIDs;
+					const supportRoles = staffRoleIDs.map((roleId) => ({
+						id: roleId,
+						allow: [PermissionsBitField.Flags.ViewChannel],
+					}));
+			
+					await closedTicketChannel.permissionOverwrites.set([
+						{
+							allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles, PermissionsBitField.Flags.EmbedLinks],
+							id: TicketOwner.id,
+						},
+						{
+							deny: PermissionsBitField.Flags.ViewChannel,
+							id: interaction.guild.id,
+						},
+						...supportRoles,
+					]);
+			
+					let mostMembersRole;
+					let maxMembers = 0;
+			
+					for (const roleId of staffRoleIDs) {
+						const role = interaction.guild.roles.cache.get(roleId);
+						if (role && role.members.size > maxMembers) {
+							maxMembers = role.members.size;
+							mostMembersRole = role;
+						}
+					}
+			
+					const oldEmbed = await closedTicketChannel.messages.fetch(ticketInfo.TicketEmbedMsgId);
+					await oldEmbed.edit({ components: [] });
+			
+					const mentionString = mostMembersRole ? `<@&${mostMembersRole.id}>` : staffRoleIDs.map((roleId) => `<@&${roleId}>`).join(', ');
+			
+					const embed = new EmbedBuilder().setDescription(`# Ticket: ${ticketInfo.ticketMenuOption[0].label}`);
+					const actionRow = new ActionRowBuilder().addComponents(new ButtonBuilder().setStyle(ButtonStyle.Secondary).setEmoji('🔒').setCustomId('ticket-close'), new ButtonBuilder().setStyle(ButtonStyle.Danger).setEmoji('🗑️').setCustomId('ticket-delete'), new ButtonBuilder().setStyle(ButtonStyle.Success).setLabel('Claim Ticket').setCustomId('ticket-claim'));
+			
+					const TicketEmbedMsg = await closedTicketChannel.send({
+						content: `# Ticket Reopened! <@${TicketOwner.id}>, ${mentionString}`,
+						embeds: [embed],
+						components: [actionRow],
+					});
+			
+					ticketInfo.TicketEmbedMsgId = TicketEmbedMsg.id;
+					ticketInfo.TicketStatus = 'Open';
+					await ticketInfo.save();
+				} catch (error) {
+					console.error(error);
+					interaction.reply({ content: 'An error occurred while reopening the ticket.', ephemeral: true });
+				}
 			}
 		}
 	} catch (error) {
@@ -262,6 +361,7 @@ async function createTicket(interaction, guildSettings, ticketSupportRoles, tick
 			TicketChannelId: createdChannel.id,
 			guildId: interaction.guild.id,
 			ticketUserID: interaction.user.id,
+			ticketMenuOption: ticketOption,
 		});
 
 		await interaction.editReply({ content: `Ticket created successfully in ${createdChannel}!`, ephemeral: true });
@@ -307,29 +407,26 @@ async function createTicket(interaction, guildSettings, ticketSupportRoles, tick
 	}
 }
 
- async function saveHtml( server, uniqueCode, htmlString){
-    const url = `${server}/save`;
-    const data = { uniqueCode, htmlString };
+async function saveHtml(server, uniqueCode, htmlString) {
+	const url = `${server}/save`;
+	const data = { uniqueCode, htmlString };
 
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
-        });
+	try {
+		const response = await axios.post(url, data, {
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
 
-        if (response.ok) {
-            const result = await response.text();
-			return result;
-        } else {
-            console.log('Failed to save HTML string. Status:', response.status);
-        }
-    } catch (error) {
-        console.error('Error:', error);
-    }
-};
+		if (response.status === 200) {
+			return response.data;
+		} else {
+			console.log('Failed to save HTML string. Status:', response.status);
+		}
+	} catch (error) {
+		console.error('Error:', error);
+	}
+}
 
 /*TODO:
 - Once Close or Claim buttons are clicked, the buttons should be disabled.✔

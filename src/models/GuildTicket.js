@@ -9,6 +9,7 @@ const GuildTicketSchema = new mongoose.Schema({
   logMessageId: { type: String },
   TicketStatus: { type: String, default: "Open" },
   TicketEmbedMsgId: { type: String },
+  ticketMenuOption: { type: Array, default: []},
 }
 
 );
