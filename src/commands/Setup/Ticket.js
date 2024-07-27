@@ -3,7 +3,7 @@ const GuildSettings = require('../../models/GuildSettings');
 const GuildTicket = require('../../models/GuildTicket');
 const { set } = require('mongoose');
 
-(module.exports = {
+module.exports = {
 	data: new SlashCommandBuilder()
 		.setName('ticket')
 		.setDescription('Various commands for Ticket System.')
@@ -198,49 +198,51 @@ const { set } = require('mongoose');
 			}
 		}
 	},
-}),
-	async function add_option(interaction, embedMsg, customid, Options, guildSettings) {
-		if (!interaction) return;
-		let modal = new ModalBuilder().setCustomId(`addBtn-modal`).setTitle('Add Option');
-		let optionName = new TextInputBuilder().setCustomId(`addBtn-modal-input-name`).setLabel('Option Name').setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(100).setRequired(true);
-		let optionDescription = new TextInputBuilder().setCustomId(`addBtn-modal-input-description`).setMinLength(1).setMaxLength(100).setLabel('Option Description').setStyle(TextInputStyle.Paragraph).setRequired(false);
-		let optionEmoji = new TextInputBuilder().setCustomId(`addBtn-modal-input-emoji`).setLabel('Option Emoji').setStyle(TextInputStyle.Short).setRequired(false);
-		const modalrow1 = new ActionRowBuilder().addComponents(optionName);
-		const modalrow2 = new ActionRowBuilder().addComponents(optionDescription);
-		const modalrow3 = new ActionRowBuilder().addComponents(optionEmoji);
-		modal.addComponents(modalrow1, modalrow2, modalrow3);
-		await interaction.showModal(modal);
-		let Modalfilter = (ModalInteraction) => ModalInteraction.customId === 'addBtn-modal';
-		interaction
-			.awaitModalSubmit({ Modalfilter, time: 60_000 })
-			.then(async (ModalInteraction) => {
-				let optionName = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-name');
-				let optionDescription = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-description');
-				let optionEmoji = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-emoji');
+};
+async function add_option(interaction, embedMsg, customid, Options, guildSettings) {
+	if (!interaction) return;
+	let modal = new ModalBuilder().setCustomId(`addBtn-modal`).setTitle('Add Option');
+	let optionName = new TextInputBuilder().setCustomId(`addBtn-modal-input-name`).setLabel('Option Name').setStyle(TextInputStyle.Short).setMinLength(1).setMaxLength(100).setRequired(true);
+	let optionDescription = new TextInputBuilder().setCustomId(`addBtn-modal-input-description`).setMinLength(1).setMaxLength(100).setLabel('Option Description').setStyle(TextInputStyle.Paragraph).setRequired(false);
+	let optionEmoji = new TextInputBuilder().setCustomId(`addBtn-modal-input-emoji`).setLabel('Option Emoji').setStyle(TextInputStyle.Short).setRequired(false);
+	const modalrow1 = new ActionRowBuilder().addComponents(optionName);
+	const modalrow2 = new ActionRowBuilder().addComponents(optionDescription);
+	const modalrow3 = new ActionRowBuilder().addComponents(optionEmoji);
+	modal.addComponents(modalrow1, modalrow2, modalrow3);
+	await interaction.showModal(modal);
+	let Modalfilter = (ModalInteraction) => ModalInteraction.customId === 'addBtn-modal';
+	interaction
+		.awaitModalSubmit({ Modalfilter, time: 60_000 })
+		.then(async (ModalInteraction) => {
+			let optionName = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-name');
+			let optionDescription = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-description');
+			let optionEmoji = await ModalInteraction.fields.getTextInputValue('addBtn-modal-input-emoji');
 
-				if (Options.some((option) => option.label.toLowerCase() === optionName.toLowerCase())) {
-					return ModalInteraction.reply({
-						content: 'Option name already exists. Please choose a different name.',
-						ephemeral: true,
-					});
-				}
+			if (Options.some((option) => option.label.toLowerCase() === optionName.toLowerCase())) {
+				return ModalInteraction.reply({
+					content: 'Option name already exists. Please choose a different name.',
+					ephemeral: true,
+				});
+			}
 
-				let Option = {
-					value: `${customid}-${optionName.toLowerCase().replace(' ', '-')}`,
-				};
-				Option.label = optionName;
-				if (optionDescription) Option.description = optionDescription;
-				if (optionEmoji) Option.emoji = optionEmoji;
-				Options.push(Option);
-				let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
-				embedMsg.edit({ components: [modalrow] });
-				ModalInteraction.reply({ content: 'Option Added.', ephemeral: true });
-				setTimeout(() => {ModalInteraction.deleteReply()}, 5000);
-				guildSettings.TicketMenuOptions = Options;
-				//await guildSettings.save();
-			})
-			.catch(console.error);
-	};
+			let Option = {
+				value: `${customid}-${optionName.toLowerCase().replace(' ', '-')}`,
+			};
+			Option.label = optionName;
+			if (optionDescription) Option.description = optionDescription;
+			if (optionEmoji) Option.emoji = optionEmoji;
+			Options.push(Option);
+			let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
+			embedMsg.edit({ components: [modalrow] });
+			ModalInteraction.reply({ content: 'Option Added.', ephemeral: true });
+			setTimeout(() => {
+				ModalInteraction.deleteReply();
+			}, 5000);
+			guildSettings.TicketMenuOptions = Options;
+			//await guildSettings.save();
+		})
+		.catch(console.error);
+}
 
 async function remove_option(interaction, embedMsg, customid, Options, guildSettings) {
 	if (!interaction) return;
@@ -261,7 +263,9 @@ async function remove_option(interaction, embedMsg, customid, Options, guildSett
 			let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
 			embedMsg.edit({ components: [modalrow] });
 			ModalInteraction.reply({ content: 'Option Removed.', ephemeral: true });
-			setTimeout(() => {ModalInteraction.deleteReply()}, 5000);
+			setTimeout(() => {
+				ModalInteraction.deleteReply();
+			}, 5000);
 			guildSettings.TicketMenuOptions = Options;
 			//await guildSettings.save();
 		} else {
@@ -340,8 +344,10 @@ async function edit_embed(interaction, embedMsg, customid, Options, guildSetting
 				content: 'Embed updated successfully.',
 				ephemeral: true,
 			});
-			
-			setTimeout(() => {ModalInteraction.deleteReply()}, 5000);
+
+			setTimeout(() => {
+				ModalInteraction.deleteReply();
+			}, 5000);
 			// Update guild settings
 			guildSettings.EmbedOptions.description = newEmbed.description;
 			guildSettings.EmbedOptions.color = ModalInteraction.fields.getTextInputValue('editBtn-modal-input-color');

@@ -209,6 +209,10 @@ module.exports = async (client, interaction) => {
 				await interaction.channel.send({
 					embeds: [new EmbedBuilder().setDescription(`Ticket unclaimed by <@!${interaction.user.id}>`)],
 				});
+			} else if (interaction.customId === 'reopen_ticket') {
+				const guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+				const ticketInfo = await GuildTicketSchema.findOne({ TicketChannelId: interaction.channel.id });
+				
 			}
 		}
 	} catch (error) {
