@@ -242,8 +242,7 @@ async function createTicket(interaction, guildSettings, ticketSupportRoles, tick
 			parent: ticketOption.Category || guildSettings.TicketCategory,
 			permissionOverwrites: [
 				{
-					allow: [PermissionsBitField.Flags.ViewChannel],
-					deny: [PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles, PermissionsBitField.Flags.EmbedLinks],
+					allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.AttachFiles, PermissionsBitField.Flags.EmbedLinks],
 					id: interaction.user.id,
 				},
 				{

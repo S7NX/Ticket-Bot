@@ -1,6 +1,5 @@
 require("dotenv").config();
 const { Client, IntentsBitField } = require("discord.js");
-const mongoose = require("mongoose");
 const eventHandler = require("./handlers/eventHandler");
 const chalk = require("chalk");
 const { ClusterClient, getInfo } = require("discord-hybrid-sharding");
@@ -17,7 +16,6 @@ const client = new Client({
   ],
 });
 
-(async () => {
   try {
     eventHandler(client);
 
@@ -26,4 +24,4 @@ const client = new Client({
   } catch (error) {
     console.log(chalk.red(`Error:`,  error));
   }
-})();
+

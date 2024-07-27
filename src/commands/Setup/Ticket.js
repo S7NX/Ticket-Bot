@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, ChatInputCommandInteraction, Client, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, ModalBuilder, PermissionFlagsBits, TextInputBuilder, TextInputStyle, RoleSelectMenuBuilder, ChannelSelectMenuBuilder, ChannelType, PermissionsBitField } = require('discord.js');
 const GuildSettings = require('../../models/GuildSettings');
 const GuildTicket = require('../../models/GuildTicket');
+const { set } = require('mongoose');
 
 (module.exports = {
 	data: new SlashCommandBuilder()
@@ -234,6 +235,7 @@ const GuildTicket = require('../../models/GuildTicket');
 				let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
 				embedMsg.edit({ components: [modalrow] });
 				ModalInteraction.reply({ content: 'Option Added.', ephemeral: true });
+				setTimeout(() => {ModalInteraction.deleteReply()}, 5000);
 				guildSettings.TicketMenuOptions = Options;
 				//await guildSettings.save();
 			})
@@ -259,6 +261,7 @@ async function remove_option(interaction, embedMsg, customid, Options, guildSett
 			let modalrow = new ActionRowBuilder().addComponents(new StringSelectMenuBuilder().addOptions(Options).setCustomId(customid));
 			embedMsg.edit({ components: [modalrow] });
 			ModalInteraction.reply({ content: 'Option Removed.', ephemeral: true });
+			setTimeout(() => {ModalInteraction.deleteReply()}, 5000);
 			guildSettings.TicketMenuOptions = Options;
 			//await guildSettings.save();
 		} else {
@@ -337,7 +340,8 @@ async function edit_embed(interaction, embedMsg, customid, Options, guildSetting
 				content: 'Embed updated successfully.',
 				ephemeral: true,
 			});
-
+			
+			setTimeout(() => {ModalInteraction.deleteReply()}, 5000);
 			// Update guild settings
 			guildSettings.EmbedOptions.description = newEmbed.description;
 			guildSettings.EmbedOptions.color = ModalInteraction.fields.getTextInputValue('editBtn-modal-input-color');
