@@ -1,7 +1,7 @@
 const GuildSettings = require('../../models/GuildSettings');
 const GuildTicket = require('../../models/GuildTicket');
 const { prefix, devs } = require('../../../config.json');
-const { PermissionsBitField, EmbedBuilder } = require('discord.js');
+const { PermissionsBitField, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 let Discord = require('discord.js');
 
 module.exports = async (client, message) => {
@@ -120,6 +120,23 @@ module.exports = async (client, message) => {
                 } catch (err) {
                     message.reply(`\`ERROR\` \`\`\`xl\n${err}\n\`\`\``);
                 }
+            } else if (cmdName === 'close') {
+                let ticketInfo = await GuildTicket.findOne({ TicketChannelId: message.channel.id });
+                if (!ticketInfo) return;
+                const confirm = new ButtonBuilder().setCustomId('close_confirm').setLabel('Confirm').setStyle(ButtonStyle.Danger);
+				const cancel = new ButtonBuilder().setCustomId('close_cancel').setLabel('Cancel').setStyle(ButtonStyle.Secondary);
+
+				const row = new ActionRowBuilder().addComponents(confirm, cancel);
+
+				let reply = message.reply({ content: 'Are you sure you want to close this ticket?', components: [row] });
+            } else if (cmdName === 'delete') {
+                let ticketInfo = await GuildTicket.findOne({ TicketChannelId: message.channel.id });
+                if (!ticketInfo) return;
+				const confirm = new ButtonBuilder().setCustomId('delete_confirm').setLabel('Confirm').setStyle(ButtonStyle.Danger);
+				const cancel = new ButtonBuilder().setCustomId('delete_cancel').setLabel('Cancel').setStyle(ButtonStyle.Secondary);
+				const row = new ActionRowBuilder().addComponents(confirm, cancel);
+
+				message.reply({ content: 'Are you sure you want to delete this ticket?', components: [row] });
             }
             
             
