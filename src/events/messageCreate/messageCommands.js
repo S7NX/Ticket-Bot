@@ -3,6 +3,7 @@ const GuildTicket = require('../../models/GuildTicket');
 const { prefix, devs } = require('../../../config.json');
 const { PermissionsBitField, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 let Discord = require('discord.js');
+const ms = require('pretty-ms')
 
 module.exports = async (client, message) => {
     if (message.author.bot) return;
@@ -138,6 +139,9 @@ module.exports = async (client, message) => {
 				const row = new ActionRowBuilder().addComponents(confirm, cancel);
 
 				message.reply({ content: 'Are you sure you want to delete this ticket?', components: [row] });
+            } else if (cmdName === 'uptime') {
+                let uptime = ms(interaction.client.uptime, { long: true })
+                await message.reply(`The bot has been online for ${uptime}`);
             }
             
             
