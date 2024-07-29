@@ -8,7 +8,8 @@ module.exports = async (client, message) => {
     if (message.author.bot) return;
 
     if (message.content.startsWith(prefix)) {
-        const [cmdName, ...cmdArgs] = message.content.slice(prefix.length).trim().split(/\s+/);
+        let [cmdName, ...cmdArgs] = message.content.slice(prefix.length).trim().split(/\s+/);
+        cmdName = cmdName.toLowerCase();
 
         try {
             if (cmdName === 'help') {
