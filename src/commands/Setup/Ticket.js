@@ -69,7 +69,7 @@ module.exports = {
 				if (guildSettings.EmbedOptions) {
 					if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
 					if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
-					if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
+					if (guildSettings.EmbedOptions.image) embed.setImage(guildSettings.EmbedOptions.image);
 					if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
 				}
 				let addBtn = new ButtonBuilder().setLabel('Add Option').setCustomId('add-option').setStyle(ButtonStyle.Primary);
@@ -133,7 +133,7 @@ module.exports = {
 				if (guildSettings.EmbedOptions) {
 					if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
 					if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
-					if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
+					if (guildSettings.EmbedOptions.image) embed.setImage(guildSettings.EmbedOptions.image);
 					if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
 				}
 				let panelMsg = await channel.send({ embeds: [embed], components: [row] });
@@ -302,8 +302,8 @@ async function edit_embed(interaction, embedMsg, customid, Options, guildSetting
 			embedColor.setValue(`#${embedData.color.toString(16).padStart(6, '0')}`); // Providing a default value if both are undefined
 		}
 
-		if (guildSettings.EmbedOptions.Image) {
-			embedImage.setValue(guildSettings.EmbedOptions.Image);
+		if (guildSettings.EmbedOptions.image) {
+			embedImage.setValue(guildSettings.EmbedOptions.image);
 		} else if (embedData.image && embedData.image.url) {
 			embedImage.setValue(embedData.image.url); // Providing a default value if both are undefined
 		}
@@ -349,9 +349,10 @@ async function edit_embed(interaction, embedMsg, customid, Options, guildSetting
 				ModalInteraction.deleteReply();
 			}, 5000);
 			// Update guild settings
+			
 			guildSettings.EmbedOptions.description = newEmbed.description;
 			guildSettings.EmbedOptions.color = ModalInteraction.fields.getTextInputValue('editBtn-modal-input-color');
-			guildSettings.EmbedOptions.Image = newEmbed.image.url;
+			guildSettings.EmbedOptions.image = newEmbed.image.url;
 			guildSettings.EmbedOptions.footer = newEmbed.footer.text;
 			//await guildSettings.save();
 		});
@@ -505,7 +506,6 @@ async function logChannel(collector, guildSettings) {
 	collector.on('collect', async (interaction) => {
 		guildSettings.TicketLogChannelID = interaction.values[0];
 		await guildSettings.save();
-
 		if (guildSettings.PanelChannelID && guildSettings.PanelMessageID) {
 			await interaction.update({ components: [], embeds: [new EmbedBuilder().setDescription(`Ticket System Setup Complete. https://discord.com/channels/${interaction.guild.id}/${guildSettings.PanelChannelID}/${guildSettings.PanelMessageID}`)], ephemeral: true });
 			let returned = await updatePanel(interaction, guildSettings);
@@ -548,7 +548,7 @@ async function updatePanel(interaction, guildSettings) {
 	if (guildSettings.EmbedOptions) {
 		if (guildSettings.EmbedOptions.description) embed.setDescription(guildSettings.EmbedOptions.description);
 		if (guildSettings.EmbedOptions.color) embed.setColor(guildSettings.EmbedOptions.color);
-		if (guildSettings.EmbedOptions.image) embed.setImage({ url: guildSettings.EmbedOptions.image });
+		if (guildSettings.EmbedOptions.image) embed.setImage(guildSettings.EmbedOptions.image);
 		if (guildSettings.EmbedOptions.footer) embed.setFooter({ text: guildSettings.EmbedOptions.footer });
 	}
 	return { panelMessage, embed, row };

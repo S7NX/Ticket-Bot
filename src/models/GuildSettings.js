@@ -22,10 +22,10 @@ const guildSettingsSchema = new mongoose.Schema({
     "emoji": "🎫"
   },] },
   EmbedOptions: {
-    description: { type: String },
-    image: { type: String },
-    color: { type: String },
-    footer: { type: String },
+    description: { type: String , default: null },
+    image: { type: String, default: null },
+    color: { type: String , default: null },
+    footer: { type: String , default: null },
   },
   }
 );

@@ -12,13 +12,13 @@
     "2.4.2": "^1.0.0",
     "axios": "^1.7.2",
     "chalk": "^2.4.2",
-    "discord-html-transcripts": "^3.2.0",
     "discord-hybrid-sharding": "^2.2.0",
     "discord.js": "^14.15.3",
     "dotenv": "^16.4.5",
     "mongoose": "^8.4.0",
     "node-fetch-commonjs": "^3.3.2",
     "os": "^0.1.2",
-    "pretty-ms": "4.0"
+    "pretty-ms": "4.0",
+    "t4discordjs": "^0.1.0"
   }
 }

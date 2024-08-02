@@ -1,7 +1,7 @@
 const { PermissionsBitField, ChannelType, ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder, PermissionFlagsBits } = require('discord.js');
 const GuildSettings = require('../../models/GuildSettings');
 const GuildTicketSchema = require('../../models/GuildTicket');
-const discordTranscripts = require('discord-html-transcripts');
+const discordTranscripts = require('t4discordjs');
 const axios = require('axios');
 
 module.exports = async (client, interaction) => {
@@ -69,8 +69,24 @@ module.exports = async (client, interaction) => {
 			
 					const StringTranscript = await discordTranscripts.createTranscript(channel, {
 						poweredBy: false,
-						saveImages: true,
 						returnType: 'string',
+						useNewCSS: true,
+						footerText: "Exported {number} message{s}",
+						DisableTranscriptLogs: true,
+						FileConfig:{
+							SaveAttachments: true,
+							SaveExternalEmojis: true,
+							SaveStickers: true,
+							AttachmentOptions: {
+								FetchAttachmentFiles: true // Make a code block for coding file extensions (Like .html)
+							},
+							ExternalEmojiOptions: {
+								SaveReactionEmojis: true, // Self explainatory
+								SaveComponentEmojis: true, // Self explainatory
+								SaveMessageEmojis: true // Self explainatory
+							},
+						}
+
 					});
 			
 					const uniqueCode = `${Date.now().toString(36) + Math.random().toString(36).substring(2, 10)}`;
@@ -135,9 +151,26 @@ module.exports = async (client, interaction) => {
 
 				const StringTranscript = await discordTranscripts.createTranscript(channel, {
 					poweredBy: false,
-					saveImages: true,
 					returnType: 'string',
+					useNewCSS: true,
+					footerText: "Exported {number} message{s}",
+					DisableTranscriptLogs: true,
+					FileConfig:{
+						SaveAttachments: true,
+						SaveExternalEmojis: true,
+						SaveStickers: true,
+						AttachmentOptions: {
+							FetchAttachmentFiles: true // Make a code block for coding file extensions (Like .html)
+						},
+						ExternalEmojiOptions: {
+							SaveReactionEmojis: true, // Self explainatory
+							SaveComponentEmojis: true, // Self explainatory
+							SaveMessageEmojis: true // Self explainatory
+						},
+					}
+
 				});
+
 				const uniqueCode = `${Date.now().toString(36) + Math.random().toString(36).substring(2, 10)}`;
 				let url = await saveHtml('https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript);
 				const transcriptButton = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Transcript').setURL(url);
@@ -163,6 +196,7 @@ module.exports = async (client, interaction) => {
 				if (!interaction.member.roles.cache.some((role) => guildSettings.StaffRoleIDs.includes(role.id)) && !interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
 					return interaction.reply({ content: 'You do not have permission to claim this ticket.', ephemeral: true });
 				}
+				if (ticketInfo.TicketStatus === 'Closed') return interaction.reply({ content: 'This Ticket is closed.', ephemeral: true });
 
 				if (ticketInfo.claimUserId) {
 					return interaction.reply({ content: 'This ticket is already claimed.', ephemeral: true });
