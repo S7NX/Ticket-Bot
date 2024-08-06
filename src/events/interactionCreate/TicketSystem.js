@@ -40,8 +40,7 @@ module.exports = async (client, interaction) => {
 						GuildSettings.findOne({ guildId: interaction.guild.id }),
 						GuildTicketSchema.findOne({ TicketChannelId: channel.id })
 					]);
-			
-					await interaction.message.delete();
+					
 			
 					let member = await interaction.guild.members.fetch(ticketInfo.ticketUserID);
 			
@@ -138,11 +137,12 @@ module.exports = async (client, interaction) => {
 			} else if (interaction.customId === 'delete_confirm') {
 				const channel = interaction.channel;
 				const member = interaction.guild.members.cache.get(channel.topic);
-				const guildSettings = await GuildSettings.findOne({ guildId: interaction.guild.id });
+				const [guildSettings, ticketInfo] = await Promise.all([
+					GuildSettings.findOne({ guildId: interaction.guild.id }),
+					GuildTicketSchema.findOne({ TicketChannelId: channel.id })
+				]);
 				const logChannel = interaction.guild.channels.cache.get(guildSettings.TicketLogChannelID);
-				const ticketInfo = await GuildTicketSchema.findOne({ TicketChannelId: channel.id });
 				const orderId = ticketInfo.ticketID;
-
 				await interaction.reply({
 					content: '## Ticket Deleted.',
 				});
@@ -462,9 +462,4 @@ async function saveHtml(server, uniqueCode, htmlString) {
 	}
 }
 
-/*TODO:
-- Once Close or Claim buttons are clicked, the buttons should be disabled.✔
-- Send Ticket close and delete logs to the log channel.✔
-- Send a message to the user when the ticket is closed or reopen.✔
-- handle reopen_ticket button click event.
-*/
+

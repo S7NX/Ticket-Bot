@@ -10,11 +10,18 @@ const GuildSettings = require("../models/GuildSettings");
 
 module.exports = {
   nFormatter,
+  handleAsync,
 };
 
 
 
-
+async function handleAsync(promise) {
+  try {
+      await promise;
+  } catch (e) {
+      console.error(e);
+  }
+}
 
 
 
