@@ -39,7 +39,7 @@ module.exports = async (client, message) => {
                     await handleUptimeCommand(message, client);
                     break;
                 default:
-                    await message.reply('Unknown command! Use `!help` to see the list of available commands.');
+                    return;
             }
         } catch (error) {
             console.error(error);
