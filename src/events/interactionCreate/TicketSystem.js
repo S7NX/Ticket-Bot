@@ -32,7 +32,7 @@ module.exports = async (client, interaction) => {
 			} else if (interaction.customId === 'close_confirm') {
 				try {
 					const channel = interaction.channel;
-			
+					
 					let parentId;
 					if (channel.parent) parentId = channel.parent.id;
 			
@@ -41,7 +41,7 @@ module.exports = async (client, interaction) => {
 						GuildTicketSchema.findOne({ TicketChannelId: channel.id })
 					]);
 					
-			
+					interaction.message.delete()
 					let member = await interaction.guild.members.fetch(ticketInfo.ticketUserID);
 			
 					const logChannel = await interaction.guild.channels.fetch(guildSettings.TicketLogChannelID);
@@ -141,9 +141,10 @@ module.exports = async (client, interaction) => {
 					GuildSettings.findOne({ guildId: interaction.guild.id }),
 					GuildTicketSchema.findOne({ TicketChannelId: channel.id })
 				]);
+				interaction.message.delete()
 				const logChannel = interaction.guild.channels.cache.get(guildSettings.TicketLogChannelID);
 				const orderId = ticketInfo.ticketID;
-				await interaction.reply({
+				await interaction.channel.send({
 					content: '## Ticket Deleted.',
 				});
 
@@ -172,7 +173,8 @@ module.exports = async (client, interaction) => {
 				});
 
 				const uniqueCode = `${Date.now().toString(36) + Math.random().toString(36).substring(2, 10)}`;
-				let url = await saveHtml('https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript);
+				saveHtml('https://s7nx.is-a-awesome.dev', uniqueCode, StringTranscript);
+				let url = `https://s7nx.is-a-awesome.dev/transcript/${uniqueCode}`;
 				const transcriptButton = new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel('Transcript').setURL(url);
 
 				await channel.delete();
