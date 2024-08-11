@@ -1,4 +1,4 @@
 const chalk = require("chalk");
-module.exports = (client, error) => {
+module.exports = async (client, error) => {
   console.log(chalk.red(String(error.stack)));
 };

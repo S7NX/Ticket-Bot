@@ -4,9 +4,11 @@ const eventHandler = require("./handlers/eventHandler");
 const chalk = require("chalk");
 const { ClusterClient, getInfo } = require("discord-hybrid-sharding");
 
+const { SHARD_LIST, TOTAL_SHARDS } = getInfo();
+
 const client = new Client({
-  shards: getInfo().SHARD_LIST,
-  shardCount: getInfo().TOTAL_SHARDS, // Total number of shards
+  shards: SHARD_LIST,
+  shardCount: TOTAL_SHARDS,
   intents: [
     IntentsBitField.Flags.Guilds,
     IntentsBitField.Flags.GuildPresences,
@@ -16,12 +18,11 @@ const client = new Client({
   ],
 });
 
-  try {
-    eventHandler(client);
+try {
+  eventHandler(client);
 
-    client.cluster = new ClusterClient(client);
-    client.login(process.env.TOKEN);
-  } catch (error) {
-    console.log(chalk.red(`Error:`,  error));
-  }
-
+  client.cluster = new ClusterClient(client);
+  client.login(process.env.TOKEN);
+} catch (error) {
+  console.error(chalk.red('Error:', error));
+}
