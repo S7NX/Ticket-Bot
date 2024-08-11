@@ -16,7 +16,7 @@ module.exports = async (client) => {
       try {
         await executeEventHandlers(client, eventFiles, arg);
       } catch (error) {
-        await handleEventError(client, error);
+        await client.handleError(interaction, error)
       }
     });
   }
@@ -35,24 +35,3 @@ async function executeEventHandlers(client, eventFiles, arg) {
   }
 }
 
-// Helper function to handle errors during event execution
-async function handleEventError(client, error) {
-  console.error(`Error executing event:`, error);
-
-  if (!errorChannel || errorChannel.length < 1) return;
-
-  const channel = client.channels.cache.get(errorChannel);
-  if (channel) {
-    const errorEmbed = createErrorEmbed(error);
-    await channel.send({ embeds: [errorEmbed] });
-  }
-}
-
-// Helper function to create a standardized error embed
-function createErrorEmbed(error) {
-  return new EmbedBuilder()
-    .setTitle('Event Execution Error')
-    .setDescription(`An error occurred during the execution of an event.\n\n\`\`\`xl\n${error.stack}\n\`\`\``)
-    .setColor('RED')
-    .setTimestamp();
-}

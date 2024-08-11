@@ -42,8 +42,7 @@ module.exports = async (client, message) => {
                     return;
             }
         } catch (error) {
-            console.error(error);
-            await message.reply('There was an error trying to execute that command!');
+            await client.handleError(message, error)
         }
     }
 };

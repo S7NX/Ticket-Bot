@@ -1,8 +1,9 @@
 require("dotenv").config();
 const { Client, IntentsBitField } = require("discord.js");
+const { ClusterClient, getInfo } = require("discord-hybrid-sharding");
 const eventHandler = require("./handlers/eventHandler");
 const chalk = require("chalk");
-const { ClusterClient, getInfo } = require("discord-hybrid-sharding");
+const { handleError } = require('./handlers/functions');
 
 const { SHARD_LIST, TOTAL_SHARDS } = getInfo();
 
@@ -18,10 +19,14 @@ const client = new Client({
   ],
 });
 
-try {
-  eventHandler(client);
+async function ClientHandleError(interaction, error) {
+  handleError(client, interaction, error);
+}
 
+try {
+  client.handleError = ClientHandleError;
   client.cluster = new ClusterClient(client);
+  eventHandler(client);
   client.login(process.env.TOKEN);
 } catch (error) {
   console.error(chalk.red('Error:', error));
