@@ -42,7 +42,6 @@ if (interaction.commandName) {
   errorEmbed.setTitle('⚠️ Event Error')
     .setDescription('An unexpected error occurred during an event.')
     .addFields(
-      { name: 'User', value: `<@${interaction.user.id}>`, inline: true },
       { name: 'Error Message', value: `\`\`\`xl\n${error.message}\n\`\`\`` }
     );
 

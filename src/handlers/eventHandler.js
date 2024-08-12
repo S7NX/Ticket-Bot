@@ -16,7 +16,7 @@ module.exports = async (client) => {
       try {
         await executeEventHandlers(client, eventFiles, arg);
       } catch (error) {
-        await client.handleError(interaction, error)
+        await client.handleError(null, error)
       }
     });
   }
